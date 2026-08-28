@@ -4,13 +4,16 @@ import { getTechniques, runQuery } from '../api.js'
 import { useDocument } from '../context/DocumentContext.jsx'
 import SelectedDocBanner from '../components/SelectedDocBanner.jsx'
 import TechniqueCard from '../components/TechniqueCard.jsx'
-import TechniqueSelect from '../components/TechniqueSelect.jsx'
+import TechniqueModal from '../components/TechniqueModal.jsx'
 import AnswerCard from '../components/AnswerCard.jsx'
+import { CATEGORIES, TECHNIQUE_CATEGORY } from '../data/techniqueCategories.js'
 
 export default function QueryPage() {
   const { selectedDoc } = useDocument()
   const [techniques, setTechniques] = useState([])
   const [technique, setTechnique] = useState('')
+  const [activeTab, setActiveTab] = useState('chunking')
+  const [expandedTechnique, setExpandedTechnique] = useState(null)
   const [query, setQuery] = useState('')
   const [topK, setTopK] = useState(5)
   const [loading, setLoading] = useState(false)
@@ -18,8 +21,11 @@ export default function QueryPage() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    getTechniques().then((t) => { setTechniques(t); if (t[0]) setTechnique(t[0].name) })
+    getTechniques().then((t) => setTechniques(t))
   }, [])
+
+  const selectedTechniqueObj = techniques.find((t) => t.name === technique)
+  const visibleTechniques = techniques.filter((t) => TECHNIQUE_CATEGORY[t.name] === activeTab)
 
   const handleRun = async () => {
     if (!selectedDoc || !technique || !query.trim()) return
@@ -44,23 +50,63 @@ export default function QueryPage() {
         </span>
         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Run a Query</h1>
         <p className="text-slate-500 mt-1 text-sm">
-          Browse all 18 RAG techniques below — tap a card to flip it and read its definition and best use case. Select one, then ask your question.
+          Choose a chunking/indexing method and a retrieval/ranking method, or just pick one technique below.
         </p>
       </header>
 
       <SelectedDocBanner doc={selectedDoc} />
 
-      {/* Technique grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
-        {techniques.map((t) => (
-          <TechniqueCard key={t.name} technique={t} selected={technique === t.name} onSelect={setTechnique} />
+      {/* Selected technique queue bar — always visible at top */}
+      <div className="sticky top-0 z-10 bg-[#F7F8FB]/90 backdrop-blur-sm pt-1 pb-3 mb-2 -mx-2 px-2">
+        <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-card">
+          <span className="text-[11px] font-semibold uppercase tracking-wide mono-tag text-slate-400 shrink-0">
+            Selected:
+          </span>
+          {selectedTechniqueObj ? (
+            <span className="flex items-center gap-2 bg-brand-50 text-brand-700 text-sm font-semibold px-3 py-1 rounded-lg">
+              #{String(selectedTechniqueObj.number).padStart(2, '0')} {selectedTechniqueObj.label}
+            </span>
+          ) : (
+            <span className="text-sm text-slate-400 italic">none yet — pick a card below</span>
+          )}
+        </div>
+      </div>
+
+      {/* Category tabs */}
+      <div className="flex gap-2 mb-4">
+        {Object.entries(CATEGORIES).map(([key, cat]) => (
+          <button
+            key={key}
+            onClick={() => setActiveTab(key)}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition border ${
+              activeTab === key
+                ? 'bg-slate-900 text-white border-slate-900'
+                : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+            }`}
+          >
+            {cat.title}
+          </button>
+        ))}
+      </div>
+      <p className="text-xs text-slate-400 mb-4">{CATEGORIES[activeTab].subtitle}</p>
+
+      {/* Technique grid — filtered by active tab */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
+        {visibleTechniques.map((t) => (
+          <TechniqueCard
+            key={t.name}
+            technique={t}
+            selected={technique === t.name}
+            onSelect={setTechnique}
+            onExpand={setExpandedTechnique}
+          />
         ))}
       </div>
 
+      <TechniqueModal technique={expandedTechnique} onClose={() => setExpandedTechnique(null)} />
+
       {/* Query box */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-card p-6 space-y-5">
-        <TechniqueSelect techniques={techniques} value={technique} onChange={setTechnique} label="Selected technique" />
-
         <div>
           <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5 mono-tag">Question</label>
           <textarea

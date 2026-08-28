@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Check, RotateCcw } from 'lucide-react'
+import { Check, RotateCcw, Maximize2 } from 'lucide-react'
 
-export default function TechniqueCard({ technique, selected, onSelect }) {
+export default function TechniqueCard({ technique, selected, onSelect, onExpand }) {
   const [flipped, setFlipped] = useState(false)
 
   return (
@@ -35,9 +35,7 @@ export default function TechniqueCard({ technique, selected, onSelect }) {
             <button
               onClick={(e) => { e.stopPropagation(); onSelect(technique.name) }}
               className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg flex items-center gap-1 transition ${
-                selected
-                  ? 'bg-white text-brand-600'
-                  : 'bg-brand-50 text-brand-700 hover:bg-brand-100'
+                selected ? 'bg-white text-brand-600' : 'bg-brand-50 text-brand-700 hover:bg-brand-100'
               }`}
             >
               {selected && <Check size={12} />}
@@ -52,10 +50,19 @@ export default function TechniqueCard({ technique, selected, onSelect }) {
             selected ? 'bg-brand-900 border-brand-700 text-white' : 'bg-slate-900 border-slate-800 text-slate-100'
           }`}
         >
-          <span className="text-[10px] uppercase tracking-wide mono-tag text-slate-400">Definition</span>
+          <div className="flex items-start justify-between gap-2">
+            <span className="text-[10px] uppercase tracking-wide mono-tag text-slate-400">Definition</span>
+            <button
+              onClick={(e) => { e.stopPropagation(); onExpand(technique) }}
+              className="text-slate-400 hover:text-white transition shrink-0"
+              title="Expand"
+            >
+              <Maximize2 size={13} />
+            </button>
+          </div>
           <p className="text-xs leading-snug text-slate-200 line-clamp-3">{technique.description}</p>
           <span className="text-[10px] uppercase tracking-wide mono-tag text-slate-400 mt-1">Best use case</span>
-          <p className="text-xs leading-snug text-slate-300 line-clamp-3">{technique.best_use_case}</p>
+          <p className="text-xs leading-snug text-slate-300 line-clamp-2">{technique.best_use_case}</p>
         </div>
       </div>
     </div>
