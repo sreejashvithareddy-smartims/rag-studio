@@ -7,6 +7,7 @@ import TechniqueCard from '../components/TechniqueCard.jsx'
 import TechniqueModal from '../components/TechniqueModal.jsx'
 import AnswerCard from '../components/AnswerCard.jsx'
 import { CATEGORIES, TECHNIQUE_CATEGORY } from '../data/techniqueCategories.js'
+import { useProject } from '../context/ProjectContext.jsx'
 
 export default function QueryPage() {
   const { selectedDoc } = useDocument()
@@ -19,6 +20,7 @@ export default function QueryPage() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
+  const { selectedProject } = useProject()
 
   useEffect(() => {
     getTechniques().then((t) => setTechniques(t))

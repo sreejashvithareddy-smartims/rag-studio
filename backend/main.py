@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routes import documents, query, compare, feedback
+from routes import documents, query, compare, feedback, projects
 
 app = FastAPI(title="RAG Studio API", version="2.0.0")
 
@@ -17,6 +17,7 @@ app.include_router(documents.router)
 app.include_router(query.router)
 app.include_router(compare.router)
 app.include_router(feedback.router)
+app.include_router(projects.router)
 
 
 @app.get("/api/health")

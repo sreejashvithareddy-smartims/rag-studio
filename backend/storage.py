@@ -32,9 +32,12 @@ def _save_docs_meta(meta: dict):
         json.dump(meta, f, indent=2)
 
 
-def list_documents() -> list[dict]:
+def list_documents(project_id: str = None) -> list[dict]:
     meta = _load_docs_meta()
-    return sorted(meta.values(), key=lambda d: d["created_at"], reverse=True)
+    docs = meta.values()
+    if project_id:
+        docs = [d for d in docs if d.get("project_id") == project_id]
+    return sorted(docs, key=lambda d: d["created_at"], reverse=True)
 
 
 def get_index_path(doc_id: str) -> str:
@@ -73,7 +76,7 @@ def _safe_chat(prompt: str, max_tokens: int = 40, fallback: str = "") -> str:
         return fallback
 
 
-def build_document_index(file_path: str, original_filename: str) -> dict:
+def build_document_index(file_path: str, original_filename: str, project_id: str = None) -> dict:
     doc_id = str(uuid.uuid4())[:8]
     raw_text = extract_text(file_path)
     if not raw_text.strip():

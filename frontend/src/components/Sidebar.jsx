@@ -1,24 +1,54 @@
-import { NavLink } from 'react-router-dom'
-import { FlaskConical, FileStack, Split, Layers } from 'lucide-react'
+import { useState } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { FlaskConical, FileStack, Split, Layers, PanelLeftClose, PanelLeftOpen, History, FolderOpen } from 'lucide-react'
+import { useProject } from '../context/ProjectContext.jsx'
+import HistoryPanel from './HistoryPanel.jsx'
 
 const links = [
-  { to: '/', label: '1. Select Document', icon: FileStack, end: true },
+  { to: '/documents', label: '1. Knowledge Base', icon: FileStack, end: true },
   { to: '/query', label: '2. Run Query', icon: FlaskConical },
   { to: '/compare', label: '3. Compare Methods', icon: Split },
 ]
 
 export default function Sidebar() {
+  const [collapsed, setCollapsed] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
+  const { selectedProject } = useProject()
+  const navigate = useNavigate()
+
   return (
-    <aside className="w-64 shrink-0 bg-[#0B1220] text-slate-300 flex flex-col h-screen sticky top-0">
-      <div className="px-6 py-6 flex items-center gap-2.5 border-b border-white/5">
-        <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center shadow-panel">
-          <Layers className="w-4.5 h-4.5 text-white" size={18} />
-        </div>
-        <div>
-          <div className="text-white font-semibold tracking-tight leading-none">RAG Studio</div>
-          <div className="text-[11px] text-slate-500 mono-tag mt-0.5">retrieval lab</div>
-        </div>
+    <aside className={`shrink-0 bg-[#0B1220] text-slate-300 flex flex-col h-screen sticky top-0 transition-all duration-200 ${collapsed ? 'w-16' : 'w-64'}`}>
+      <div className="px-4 py-6 flex items-center justify-between border-b border-white/5">
+        <button onClick={() => navigate('/')} className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center shrink-0">
+            <Layers className="w-4.5 h-4.5 text-white" size={18} />
+          </div>
+          {!collapsed && (
+            <div className="min-w-0 text-left">
+              <div className="text-white font-semibold tracking-tight leading-none truncate">RAG Studio</div>
+              <div className="text-[11px] text-slate-500 mono-tag mt-0.5">retrieval lab</div>
+            </div>
+          )}
+        </button>
+        <button onClick={() => setCollapsed(!collapsed)} className="text-slate-400 hover:text-white transition shrink-0">
+          {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+        </button>
       </div>
+
+      {selectedProject && !collapsed && (
+        <div className="px-4 py-3 border-b border-white/5">
+          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide mono-tag text-slate-500 mb-1">
+            <FolderOpen size={11} /> Project
+          </div>
+          <p className="text-sm font-semibold text-white truncate">{selectedProject.name}</p>
+          <button
+            onClick={() => setShowHistory(true)}
+            className="flex items-center gap-1.5 text-[11px] text-brand-400 hover:text-brand-300 mt-2"
+          >
+            <History size={12} /> View history
+          </button>
+        </div>
+      )}
 
       <nav className="flex-1 px-3 py-5 space-y-1">
         {links.map(({ to, label, icon: Icon, end }) => (
@@ -26,6 +56,7 @@ export default function Sidebar() {
             key={to}
             to={to}
             end={end}
+            title={collapsed ? label : undefined}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive
@@ -35,16 +66,21 @@ export default function Sidebar() {
             }
           >
             <Icon size={17} strokeWidth={2} />
-            {label}
+            {!collapsed && label}
           </NavLink>
         ))}
       </nav>
 
-      <div className="px-6 py-5 border-t border-white/5 text-[11px] text-slate-500 leading-relaxed">
-        <span className="mono-tag text-slate-400">18</span> techniques ·{' '}
-        <span className="mono-tag text-slate-400">ChromaDB</span> vector store ·{' '}
-        <span className="text-emerald-400">●</span> connected
-      </div>
+      {!collapsed && (
+        <div className="px-6 py-5 border-t border-white/5 text-[11px] text-slate-500 leading-relaxed">
+          <span className="mono-tag text-slate-400">18</span> techniques ·{' '}
+          <span className="mono-tag text-slate-400">ChromaDB</span> vector store
+        </div>
+      )}
+
+      {showHistory && selectedProject && (
+        <HistoryPanel projectId={selectedProject.project_id} onClose={() => setShowHistory(false)} />
+      )}
     </aside>
   )
 }

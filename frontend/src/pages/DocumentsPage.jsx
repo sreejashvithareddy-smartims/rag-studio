@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { UploadCloud, FileText, Trash2, Loader2, CheckCircle2, AlertCircle, ArrowRight, CircleDot, Circle } from 'lucide-react'
 import { getDocuments, uploadDocument, deleteDocument } from '../api.js'
 import { useDocument } from '../context/DocumentContext.jsx'
+import { useProject } from '../context/ProjectContext.jsx'
 
 export default function DocumentsPage() {
   const [docs, setDocs] = useState([])
@@ -13,10 +14,11 @@ export default function DocumentsPage() {
   const inputRef = useRef(null)
   const navigate = useNavigate()
   const { selectedDoc, setSelectedDoc } = useDocument()
+  const { selectedProject } = useProject()
 
-  const refresh = () => getDocuments().then(setDocs).catch(() => {})
+  const refresh = () => getDocuments(selectedProject?.project_id).then(setDocs).catch(() => {})
+  useEffect(() => { refresh() }, [selectedProject])
 
-  useEffect(() => { refresh() }, [])
 
   const handleFile = async (file) => {
     if (!file) return
@@ -25,7 +27,7 @@ export default function DocumentsPage() {
     setError(null)
     setSuccess(null)
     try {
-      const meta = await uploadDocument(file, setProgress)
+        const meta = await uploadDocument(file, selectedProject?.project_id, setProgress)
       setSuccess(`"${meta.filename}" indexed successfully across all 18 technique indexes.`)
       setSelectedDoc(meta)
       refresh()

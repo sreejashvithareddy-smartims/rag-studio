@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import storage
+import history_store
 from pipelines import get_pipeline, list_techniques
 
 router = APIRouter(prefix="/api", tags=["query"])
@@ -11,6 +12,7 @@ class QueryRequest(BaseModel):
     technique: str
     query: str
     top_k: int = 5
+    project_id: str | None = None
 
 
 @router.get("/techniques")
@@ -32,5 +34,12 @@ async def run_query(req: QueryRequest):
         raise HTTPException(400, str(e))
     except Exception as e:
         raise HTTPException(500, f"Pipeline error: {e}")
-
+        if req.project_id:
+        history_store.log_event(req.project_id, {
+            "type": "query",
+            "technique": result.get("label"),
+            "query": req.query,
+            "doc_id": req.doc_id,
+            "answer_preview": (result.get("answer") or "")[:150],
+        })
     return result

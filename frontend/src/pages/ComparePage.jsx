@@ -8,6 +8,7 @@ import AnswerCard from '../components/AnswerCard.jsx'
 import MetricBar from '../components/MetricBar.jsx'
 import { TECHNIQUE_CATEGORY } from '../data/techniqueCategories.js'
 import { BEST_COMBINATIONS } from '../data/bestCombinations.js'
+import { useProject } from '../context/ProjectContext.jsx'
 
 const COLOR_A = '#3b5bff'
 const COLOR_B = '#14b8a6'
@@ -61,7 +62,7 @@ export default function ComparePage() {
     setError(null)
     setData(null)
     try {
-      const res = await runCompare({ doc_id: selectedDoc.doc_id, technique_a: techA, technique_b: techB, query })
+      const res = await runCompare({ doc_id: selectedDoc.doc_id, technique_a: techA, technique_b: techB, query, project_id: selectedProject?.project_id })
       setData(res)
     } catch (e) {
       setError(e?.response?.data?.detail || 'Comparison failed.')
