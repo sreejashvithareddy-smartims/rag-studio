@@ -46,9 +46,19 @@ export default function HistoryPanel({ projectId, onClose }) {
                   {h.answer_preview && <span className="block mt-1 text-slate-400 italic">"{h.answer_preview}…"</span>}
                 </p>
               ) : (
-                <p className="text-xs text-slate-500 flex items-center gap-1">
-                  {h.technique_a} vs {h.technique_b}
-                  {h.winner && <span className="flex items-center gap-1 ml-2 text-amber-600 font-semibold"><Trophy size={11} /> {h.winner}</span>}
+                                <p className="text-xs text-slate-500 flex items-center gap-2 flex-wrap">
+                  <span>{h.technique_a} vs {h.technique_b}</span>
+                  {h.winner && <span className="flex items-center gap-1 text-amber-600 font-semibold"><Trophy size={11} /> {h.winner}</span>}
+                  {h.similar_count != null && (
+                    <span className="text-[10px] mono-tag bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">
+                      {h.similar_count} similar
+                    </span>
+                  )}
+                  {h.different_count != null && (
+                    <span className="text-[10px] mono-tag bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded">
+                      {h.different_count} different
+                    </span>
+                  )}
                 </p>
               )}
             </div>

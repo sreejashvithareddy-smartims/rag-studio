@@ -96,3 +96,61 @@ def compare(query: str, result_a: dict, result_b: dict) -> dict:
         "scores": {result_a["technique"]: scores_a, result_b["technique"]: scores_b},
         "verdict": {**verdict, "winner_label": winner_label},
     }
+import re
+
+
+def _normalize(text: str) -> set[str]:
+    text = re.sub(r"[^\w\s]", " ", text.lower())
+    return set(w for w in text.split() if len(w) > 2)
+
+
+def _jaccard(text_a: str, text_b: str) -> float:
+    set_a, set_b = _normalize(text_a), _normalize(text_b)
+    if not set_a or not set_b:
+        return 0.0
+    intersection = len(set_a & set_b)
+    union = len(set_a | set_b)
+    return intersection / union if union else 0.0
+
+
+def compute_chunk_overlap(chunks_a: list[dict], chunks_b: list[dict], threshold: float = 0.5) -> dict:
+    """
+    Compares retrieved chunks between two techniques by text similarity (not index —
+    different chunking strategies produce different chunk boundaries, so exact index
+    matching would be meaningless). Returns which chunks both methods agreed on
+    ("similar") vs. which each method uniquely surfaced ("not similar").
+    """
+    matched_b = set()
+    similar = []
+    unique_a = []
+
+    for ca in chunks_a:
+        best_score, best_idx = 0.0, None
+        for j, cb in enumerate(chunks_b):
+            if j in matched_b:
+                continue
+            score = _jaccard(ca["text"], cb["text"])
+            if score > best_score:
+                best_score, best_idx = score, j
+
+        if best_score >= threshold:
+            similar.append({
+                "text_a": ca["text"],
+                "text_b": chunks_b[best_idx]["text"],
+                "similarity": round(best_score, 2),
+                "chunk_index_a": ca.get("meta", {}).get("chunk_index"),
+                "chunk_index_b": chunks_b[best_idx].get("meta", {}).get("chunk_index"),
+            })
+            matched_b.add(best_idx)
+        else:
+            unique_a.append(ca)
+
+    unique_b = [cb for j, cb in enumerate(chunks_b) if j not in matched_b]
+
+    return {
+        "similar": similar,
+        "unique_a": unique_a,
+        "unique_b": unique_b,
+        "similar_count": len(similar),
+        "different_count": len(unique_a) + len(unique_b),
+    }

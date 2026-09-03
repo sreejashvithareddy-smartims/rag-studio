@@ -34,7 +34,8 @@ async def run_query(req: QueryRequest):
         raise HTTPException(400, str(e))
     except Exception as e:
         raise HTTPException(500, f"Pipeline error: {e}")
-        if req.project_id:
+
+    if req.project_id:
         history_store.log_event(req.project_id, {
             "type": "query",
             "technique": result.get("label"),
@@ -42,4 +43,5 @@ async def run_query(req: QueryRequest):
             "doc_id": req.doc_id,
             "answer_preview": (result.get("answer") or "")[:150],
         })
+
     return result

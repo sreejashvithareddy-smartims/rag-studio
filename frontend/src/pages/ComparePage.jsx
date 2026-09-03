@@ -9,6 +9,7 @@ import MetricBar from '../components/MetricBar.jsx'
 import { TECHNIQUE_CATEGORY } from '../data/techniqueCategories.js'
 import { BEST_COMBINATIONS } from '../data/bestCombinations.js'
 import { useProject } from '../context/ProjectContext.jsx'
+import ChunkOverlapPanel from '../components/ChunkOverlapPanel.jsx'
 
 const COLOR_A = '#3b5bff'
 const COLOR_B = '#14b8a6'
@@ -185,6 +186,8 @@ export default function ComparePage() {
                 <AnswerCard result={data.result_a} accentClass="border-brand-200" badgeClass="bg-brand-50 text-brand-700 border-brand-200" />
                 <AnswerCard result={data.result_b} accentClass="border-teal-200" badgeClass="bg-teal-50 text-teal-700 border-teal-200" />
               </div>
+
+              <ChunkOverlapPanel overlap={data.chunk_overlap} labelA={data.result_a.label} labelB={data.result_b.label} />
             </div>
           )}
         </div>
