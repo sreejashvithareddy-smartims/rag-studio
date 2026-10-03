@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react'
 import { Swords, Loader2, Trophy, Scale, Sparkles } from 'lucide-react'
 import { getTechniques, runCompare } from '../api.js'
 import { useDocument } from '../context/DocumentContext.jsx'
+import { useProject } from '../context/ProjectContext.jsx'
 import SelectedDocBanner from '../components/SelectedDocBanner.jsx'
 import TechniqueSelect from '../components/TechniqueSelect.jsx'
 import AnswerCard from '../components/AnswerCard.jsx'
 import MetricBar from '../components/MetricBar.jsx'
+import ChunkOverlapPanel from '../components/ChunkOverlapPanel.jsx'
 import { TECHNIQUE_CATEGORY } from '../data/techniqueCategories.js'
 import { BEST_COMBINATIONS } from '../data/bestCombinations.js'
-import { useProject } from '../context/ProjectContext.jsx'
-import ChunkOverlapPanel from '../components/ChunkOverlapPanel.jsx'
 
 const COLOR_A = '#3b5bff'
 const COLOR_B = '#14b8a6'
@@ -22,6 +22,7 @@ const TABS = {
 
 export default function ComparePage() {
   const { selectedDoc } = useDocument()
+  const { selectedProject } = useProject()
   const [techniques, setTechniques] = useState([])
   const [activeTab, setActiveTab] = useState('chunking')
   const [techA, setTechA] = useState('')
@@ -32,7 +33,12 @@ export default function ComparePage() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    getTechniques().then((t) => setTechniques(t))
+    getTechniques().then((t) => {
+      setTechniques(t)
+      const opts = t.filter((x) => TECHNIQUE_CATEGORY[x.name] === activeTab)
+      setTechA(opts[0]?.name || '')
+      setTechB(opts[1]?.name || '')
+    })
   }, [])
 
   // filter dropdown options based on active tab
@@ -63,7 +69,13 @@ export default function ComparePage() {
     setError(null)
     setData(null)
     try {
-      const res = await runCompare({ doc_id: selectedDoc.doc_id, technique_a: techA, technique_b: techB, query, project_id: selectedProject?.project_id })
+      const res = await runCompare({
+        doc_id: selectedDoc.doc_id,
+        technique_a: techA,
+        technique_b: techB,
+        query,
+        project_id: selectedProject?.project_id,
+      })
       setData(res)
     } catch (e) {
       setError(e?.response?.data?.detail || 'Comparison failed.')
@@ -169,7 +181,14 @@ export default function ComparePage() {
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-white shadow-card p-6">
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mono-tag mb-4">Score breakdown</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mono-tag">Score breakdown</h3>
+                  {data.comparison.eval_engine && (
+                    <span className="text-[10px] mono-tag bg-violet-50 text-violet-700 px-2 py-0.5 rounded-full font-semibold">
+                      scored via {Object.values(data.comparison.eval_engine)[0] === 'ragas' ? 'RAGAS' : 'LLM judge'}
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center gap-4 mb-4 text-xs mono-tag">
                   <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: COLOR_A }} />{data.result_a.label}</span>
                   <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: COLOR_B }} />{data.result_b.label}</span>

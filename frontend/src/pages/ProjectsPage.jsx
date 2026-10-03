@@ -13,6 +13,12 @@ export default function ProjectsPage() {
 
   const refresh = () => getProjects().then(setProjects).catch(() => {})
   useEffect(() => { refresh() }, [])
+  useEffect(() => {
+    const hasBuilding = projects.some((p) => p.overall_status === 'building')
+    if (!hasBuilding) return
+    const interval = setInterval(refresh, 2000)
+    return () => clearInterval(interval)
+  }, [projects])
 
   const handleCreate = async () => {
     if (!newName.trim()) return
@@ -90,10 +96,16 @@ export default function ProjectsPage() {
               <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
                 <FolderOpen size={19} className="text-slate-500" />
               </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-800 truncate">{p.name}</p>
+                            <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-800 truncate flex items-center gap-2">
+                  {p.name}
+                  {p.overall_status === 'ready' && <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" title="Ready" />}
+                  {p.overall_status === 'building' && <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" title="Indexing in progress" />}
+                  {p.overall_status === 'error' && <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" title="Indexing error" />}
+                </p>
                 <p className="text-[11px] text-slate-400 mono-tag">
                   {new Date(p.created_at * 1000).toLocaleDateString()}
+                  {p.doc_count > 0 && ` · ${p.doc_count} doc${p.doc_count !== 1 ? 's' : ''}`}
                 </p>
               </div>
             </div>

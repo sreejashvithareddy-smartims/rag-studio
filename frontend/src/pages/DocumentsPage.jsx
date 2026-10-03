@@ -17,6 +17,14 @@ export default function DocumentsPage() {
   const { selectedProject } = useProject()
 
   const refresh = () => getDocuments(selectedProject?.project_id).then(setDocs).catch(() => {})
+
+  // poll every 2s while any document is still building
+  useEffect(() => {
+    const hasBuilding = docs.some((d) => d.status === 'building')
+    if (!hasBuilding) return
+    const interval = setInterval(refresh, 2000)
+    return () => clearInterval(interval)
+  }, [docs])
   useEffect(() => { refresh() }, [selectedProject])
 
 
@@ -117,7 +125,7 @@ export default function DocumentsPage() {
               return (
                 <div
                   key={d.doc_id}
-                  onClick={() => setSelectedDoc(d)}
+                  onClick={() => d.status === 'ready' && setSelectedDoc(d)}
                   className={`flex items-center justify-between border rounded-xl px-4 py-3 shadow-card cursor-pointer transition ${
                     isSelected ? 'bg-brand-50 border-brand-300 ring-1 ring-brand-300' : 'bg-white border-slate-200 hover:border-brand-200'
                   }`}

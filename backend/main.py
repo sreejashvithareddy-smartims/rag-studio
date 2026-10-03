@@ -20,6 +20,16 @@ app.include_router(feedback.router)
 app.include_router(projects.router)
 
 
+@app.on_event("startup")
+async def warmup():
+    try:
+        from llm import embed_texts
+        embed_texts(["warmup"])
+        print("✓ Embedding model pre-loaded and ready.")
+    except Exception as e:
+        print(f"Warmup skipped: {e}")
+
+
 @app.get("/api/health")
 async def health():
     return {"status": "ok"}

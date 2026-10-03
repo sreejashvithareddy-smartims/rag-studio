@@ -1,7 +1,6 @@
 import os
 import shutil
-from fastapi import Form
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Form
 from config import settings
 import storage
 
@@ -11,7 +10,7 @@ ALLOWED_EXTENSIONS = {".pdf", ".txt", ".md"}
 
 
 @router.post("/upload")
-async def upload_document(file: UploadFile = File(...), project_id: str = Form(None)):
+async def upload_document(background_tasks: BackgroundTasks, file: UploadFile = File(...), project_id: str = Form(None)):
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(400, f"Unsupported file type '{ext}'. Allowed: {sorted(ALLOWED_EXTENSIONS)}")
@@ -20,12 +19,10 @@ async def upload_document(file: UploadFile = File(...), project_id: str = Form(N
     with open(tmp_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
-    try:
-        meta = storage.build_document_index(tmp_path, file.filename, project_id=project_id)
-    except Exception as e:
-        raise HTTPException(500, f"Failed to process document: {e}")
+    placeholder = storage.create_placeholder(file.filename, project_id=project_id)
+    background_tasks.add_task(storage.populate_document_index, placeholder["doc_id"], tmp_path, file.filename)
 
-    return meta
+    return placeholder
 
 
 @router.get("")

@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import projects_store
 import history_store
+import storage
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
@@ -19,7 +20,22 @@ async def create_project(req: CreateProjectRequest):
 
 @router.get("")
 async def list_projects():
-    return projects_store.list_projects()
+    projects = projects_store.list_projects()
+    for p in projects:
+        docs = storage.list_documents(p["project_id"])
+        p["doc_count"] = len(docs)
+        p["building_count"] = sum(1 for d in docs if d.get("status") == "building")
+        p["ready_count"] = sum(1 for d in docs if d.get("status") == "ready")
+        p["error_count"] = sum(1 for d in docs if d.get("status") == "error")
+        if p["building_count"] > 0:
+            p["overall_status"] = "building"
+        elif p["error_count"] > 0 and p["ready_count"] == 0:
+            p["overall_status"] = "error"
+        elif docs:
+            p["overall_status"] = "ready"
+        else:
+            p["overall_status"] = "empty"
+    return projects
 
 
 @router.get("/{project_id}")

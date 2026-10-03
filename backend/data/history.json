@@ -1,0 +1,135 @@
+{
+  "74bcbe13": [
+    {
+      "type": "compare",
+      "technique_a": "Simple RAG",
+      "technique_b": "Semantic Chunking",
+      "query": "What is the policy for leave",
+      "doc_id": "7f2be718",
+      "winner": "Simple RAG",
+      "similar_count": 4,
+      "different_count": 0,
+      "timestamp": 1788932932.629241
+    },
+    {
+      "type": "compare",
+      "technique_a": "Simple RAG",
+      "technique_b": "Semantic Chunking",
+      "query": "What are the leave policies",
+      "doc_id": "7f2be718",
+      "winner": "Simple RAG",
+      "similar_count": 4,
+      "different_count": 0,
+      "timestamp": 1788861391.8412104
+    },
+    {
+      "type": "compare",
+      "technique_a": "Context-Enriched RAG",
+      "technique_b": "Query Transformation",
+      "query": "leave policy",
+      "doc_id": "7f2be718",
+      "winner": "Query Transformation",
+      "similar_count": 4,
+      "different_count": 0,
+      "timestamp": 1788430990.739412
+    },
+    {
+      "type": "compare",
+      "technique_a": "Simple RAG",
+      "technique_b": "Semantic Chunking",
+      "query": "leave policy ",
+      "doc_id": "7f2be718",
+      "winner": "Simple RAG",
+      "similar_count": 4,
+      "different_count": 0,
+      "timestamp": 1788430798.148421
+    }
+  ],
+  "86a18840": [
+    {
+      "type": "compare",
+      "technique_a": "Simple RAG",
+      "technique_b": "Semantic Chunking",
+      "query": "what is there in the pdf",
+      "doc_id": "8d7f1cc9",
+      "winner": "Simple RAG",
+      "similar_count": 1,
+      "different_count": 8,
+      "timestamp": 1788946813.7264028
+    }
+  ],
+  "a2c00a27": [
+    {
+      "type": "compare",
+      "technique_a": "Simple RAG",
+      "technique_b": "Semantic Chunking",
+      "query": "What is the pdf about",
+      "doc_id": "e5525e8e",
+      "winner": "Semantic Chunking",
+      "similar_count": 1,
+      "different_count": 8,
+      "timestamp": 1789105714.915783
+    }
+  ],
+  "6bd61b21": [
+    {
+      "type": "compare",
+      "technique_a": "Simple RAG",
+      "technique_b": "Semantic Chunking",
+      "query": "What is the pdf about",
+      "doc_id": "8333550d",
+      "winner": "Semantic Chunking",
+      "similar_count": 1,
+      "different_count": 8,
+      "timestamp": 1789108951.5925217
+    }
+  ],
+  "cece3156": [
+    {
+      "type": "compare",
+      "technique_a": "Simple RAG",
+      "technique_b": "Semantic Chunking",
+      "query": "Tell me all the steps used in the process ",
+      "doc_id": "a158c84c",
+      "winner": "Semantic Chunking",
+      "similar_count": 0,
+      "different_count": 10,
+      "timestamp": 1789629157.7018943
+    }
+  ],
+  "1274c626": [
+    {
+      "type": "compare",
+      "technique_a": "Simple RAG",
+      "technique_b": "Hierarchical Indices",
+      "query": "What is discussed",
+      "doc_id": "c696ee74",
+      "winner": "Simple RAG",
+      "similar_count": 0,
+      "different_count": 6,
+      "timestamp": 1789709194.9866774
+    },
+    {
+      "type": "compare",
+      "technique_a": "Simple RAG",
+      "technique_b": "Semantic Chunking",
+      "query": "What is discussed",
+      "doc_id": "c696ee74",
+      "winner": "Simple RAG",
+      "similar_count": 0,
+      "different_count": 10,
+      "timestamp": 1789708996.5397596
+    },
+    {
+      "type": "compare",
+      "technique_a": "Simple RAG",
+      "technique_b": "Semantic Chunking",
+      "query": "What is discussed ",
+      "doc_id": "c696ee74",
+      "winner": "Simple RAG",
+      "similar_count": 0,
+      "different_count": 10,
+      "timestamp": 1789708923.7357786
+    }
+  ]
+}
