@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Swords, Loader2, Trophy, Scale, Sparkles } from 'lucide-react'
+import { Swords, Loader2, Trophy, Scale, Sparkles, Download } from 'lucide-react'
 import { getTechniques, runCompare } from '../api.js'
 import { useDocument } from '../context/DocumentContext.jsx'
 import { useProject } from '../context/ProjectContext.jsx'
@@ -10,6 +10,7 @@ import MetricBar from '../components/MetricBar.jsx'
 import ChunkOverlapPanel from '../components/ChunkOverlapPanel.jsx'
 import { TECHNIQUE_CATEGORY } from '../data/techniqueCategories.js'
 import { BEST_COMBINATIONS } from '../data/bestCombinations.js'
+import { downloadComparisonPdf } from '../utils/comparisonPdf.js'
 
 const COLOR_A = '#3b5bff'
 const COLOR_B = '#14b8a6'
@@ -31,6 +32,7 @@ export default function ComparePage() {
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
+  const [exportStatus, setExportStatus] = useState(null)
 
   useEffect(() => {
     getTechniques().then((t) => {
@@ -41,14 +43,12 @@ export default function ComparePage() {
     })
   }, [])
 
-  // filter dropdown options based on active tab
   const optionsForTab = (tab) => {
     if (tab === 'mixed') return techniques
     return techniques.filter((t) => TECHNIQUE_CATEGORY[t.name] === tab)
   }
   const currentOptions = optionsForTab(activeTab)
 
-  // when switching tabs, reset selections to valid defaults for that tab
   const switchTab = (tab) => {
     setActiveTab(tab)
     const opts = optionsForTab(tab)
@@ -67,6 +67,7 @@ export default function ComparePage() {
     if (!selectedDoc || !techA || !techB || !query.trim()) return
     setLoading(true)
     setError(null)
+    setExportStatus(null)
     setData(null)
     try {
       const res = await runCompare({
@@ -76,7 +77,7 @@ export default function ComparePage() {
         query,
         project_id: selectedProject?.project_id,
       })
-      setData(res)
+      setData({ ...res, compared_at: Date.now() })
     } catch (e) {
       setError(e?.response?.data?.detail || 'Comparison failed.')
     } finally {
@@ -90,21 +91,42 @@ export default function ComparePage() {
 
   const findLabel = (name) => techniques.find((t) => t.name === name)?.label || name
 
+  const exportPdf = async () => {
+    if (!data) return
+    try {
+      await downloadComparisonPdf({ data, project: selectedProject, documentName: selectedDoc?.filename, comparedAt: data.compared_at })
+      setExportStatus('Comparison PDF downloaded.')
+    } catch (e) {
+      setError(e?.message || 'Could not generate the comparison PDF.')
+    }
+  }
+
   return (
     <div className="max-w-6xl mx-auto py-10 px-8">
-      <header className="mb-6">
-        <span className="inline-block text-[11px] font-bold uppercase tracking-wide mono-tag text-brand-600 bg-brand-50 px-2.5 py-1 rounded-full mb-3">
-          Step 3 of 3
-        </span>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Compare Methods</h1>
-        <p className="text-slate-500 mt-1 text-sm">
-          Pick a comparison type below, then choose Method 1 and Method 2 for that category.
-        </p>
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <span className="inline-block text-[11px] font-bold uppercase tracking-wide mono-tag text-brand-600 bg-brand-50 px-2.5 py-1 rounded-full mb-3">
+            Step 3 of 3
+          </span>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Compare Methods</h1>
+          <p className="text-slate-500 mt-1 text-sm">
+            Pick a comparison type below, then choose Method 1 and Method 2 for that category.
+          </p>
+        </div>
+        <button
+          onClick={exportPdf}
+          disabled={!data || loading}
+          title={data ? 'Export the completed comparison as a PDF report' : 'Complete a comparison before exporting'}
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-card transition hover:border-brand-300 hover:text-brand-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+        >
+          <Download size={16} /> Export PDF
+        </button>
       </header>
+
+      {exportStatus && <p role="status" className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">{exportStatus}</p>}
 
       <SelectedDocBanner doc={selectedDoc} />
 
-      {/* Three top tabs/cards */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {Object.entries(TABS).map(([key, tab]) => (
           <button
@@ -125,7 +147,6 @@ export default function ComparePage() {
       </div>
 
       <div className={`grid gap-6 ${activeTab === 'mixed' ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1'}`}>
-        {/* Main compare form */}
         <div className={activeTab === 'mixed' ? 'lg:col-span-2' : ''}>
           <div className="bg-white border border-slate-200 rounded-2xl shadow-card p-6 space-y-5">
             <div className="grid grid-cols-2 gap-4">
@@ -185,7 +206,12 @@ export default function ComparePage() {
                   <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mono-tag">Score breakdown</h3>
                   {data.comparison.eval_engine && (
                     <span className="text-[10px] mono-tag bg-violet-50 text-violet-700 px-2 py-0.5 rounded-full font-semibold">
-                      scored via {Object.values(data.comparison.eval_engine)[0] === 'ragas' ? 'RAGAS' : 'LLM judge'}
+                      {(() => {
+                        const engines = Object.values(data.comparison.eval_engine)
+                        if (engines.every((engine) => engine === 'ragas')) return 'scored via RAGAS'
+                        if (engines.every((engine) => engine === 'custom_llm_judge')) return 'fallback: LLM judge'
+                        return 'RAGAS / LLM judge fallback'
+                      })()}
                     </span>
                   )}
                 </div>
@@ -194,7 +220,8 @@ export default function ComparePage() {
                   <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: COLOR_B }} />{data.result_b.label}</span>
                 </div>
                 <MetricBar label="Faithfulness (grounded in context)" valueA={scoresA?.faithfulness} valueB={scoresB?.faithfulness} colorA={COLOR_A} colorB={COLOR_B} />
-                <MetricBar label="Relevance (answers the question)" valueA={scoresA?.relevance} valueB={scoresB?.relevance} colorA={COLOR_A} colorB={COLOR_B} />
+                <MetricBar label="Answer Relevancy (addresses the question)" valueA={scoresA?.relevance} valueB={scoresB?.relevance} colorA={COLOR_A} colorB={COLOR_B} />
+                <MetricBar label="Context Precision (retrieved chunks are relevant)" valueA={scoresA?.context_precision} valueB={scoresB?.context_precision} colorA={COLOR_A} colorB={COLOR_B} />
                 <div className="grid grid-cols-2 gap-4 mt-4 text-[11px] mono-tag text-slate-400">
                   <span>{data.result_a.timing?.total_ms} ms · {data.result_a.chunks?.length} chunks</span>
                   <span>{data.result_b.timing?.total_ms} ms · {data.result_b.chunks?.length} chunks</span>
@@ -211,7 +238,6 @@ export default function ComparePage() {
           )}
         </div>
 
-        {/* Best Combinations sidebar — mixed tab only */}
         {activeTab === 'mixed' && (
           <div>
             <div className="bg-white border border-slate-200 rounded-2xl shadow-card p-5 sticky top-4">

@@ -1,7 +1,10 @@
 import re
 import json
+import logging
 from llm import chat
 import ragas_eval
+
+logger = logging.getLogger(__name__)
 
 FAITHFULNESS_PROMPT = """Given the CONTEXT and the ANSWER below, rate from 0-10 how well the
 answer is supported by the context. Be strict: only give 9-10 if EVERY claim in the answer is
@@ -47,7 +50,8 @@ def _extract_number(text: str, default: float = 5.0) -> float:
 
 
 def score_result(query: str, result: dict) -> dict:
-    """Custom LLM-judge scoring — used as a fallback if RAGAS fails."""
+    """Custom LLM-judge scoring — used as a fallback if RAGAS fails. Only covers
+    faithfulness/relevance since context precision has no simple single-prompt equivalent."""
     context = "\n\n".join(c["text"] for c in result["chunks"])[:6000]
     answer = result["answer"]
 
@@ -63,21 +67,28 @@ def score_result(query: str, result: dict) -> dict:
     except Exception:
         relevance = None
 
-    return {"faithfulness": faithfulness, "relevance": relevance}
+    return {"faithfulness": faithfulness, "relevance": relevance, "context_precision": None}
 
 
 def _score_with_fallback(query: str, result: dict) -> tuple[dict, str]:
-    """Tries RAGAS first (standardized metrics). Falls back to custom LLM-judge scoring if RAGAS fails."""
+    """Tries RAGAS first (full metric suite). Falls back to custom LLM-judge scoring if RAGAS fails."""
     try:
         contexts = [c["text"] for c in result["chunks"]]
         ragas_result = ragas_eval.ragas_score(query, result["answer"], contexts)
-        if ragas_result["faithfulness"] is not None or ragas_result["answer_relevancy"] is not None:
+        has_any = any(v is not None for v in ragas_result.values())
+        if has_any:
             return {
                 "faithfulness": ragas_result["faithfulness"],
                 "relevance": ragas_result["answer_relevancy"],
+                "context_precision": ragas_result["context_precision"],
             }, "ragas"
     except Exception as e:
-        print(f"RAGAS scoring failed, falling back to custom judge: {e}")
+        logger.error(
+            "RAGAS scoring failed for technique %s; using the custom LLM judge (%s: %s)",
+            result.get("technique", "unknown"),
+            type(e).__name__,
+            ragas_eval._redact_secrets(str(e)),
+        )
 
     return score_result(query, result), "custom_llm_judge"
 
@@ -105,6 +116,9 @@ def judge(query: str, result_a: dict, result_b: dict) -> dict:
 
 
 def compare(query: str, result_a: dict, result_b: dict) -> dict:
+    if result_a["technique"] == result_b["technique"]:
+        raise ValueError("Choose two different techniques to compare.")
+
     scores_a, engine_a = _score_with_fallback(query, result_a)
     scores_b, engine_b = _score_with_fallback(query, result_b)
     verdict = judge(query, result_a, result_b)

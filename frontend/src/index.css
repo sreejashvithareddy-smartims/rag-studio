@@ -31,3 +31,87 @@ body {
   50% { opacity: 0.35; }
 }
 .pulse-dot { animation: pulse-dot 1.4s ease-in-out infinite; }
+
+.project-intro {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: #0B1220;
+}
+.project-intro-grid {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: radial-gradient(rgba(148, 163, 184, 0.15) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: linear-gradient(to bottom, transparent, black 25%, black 75%, transparent);
+}
+.retrieval-flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(100%, 620px);
+  gap: 14px;
+}
+.flow-node {
+  display: flex;
+  width: 104px;
+  height: 100px;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.9);
+  color: #cbd5e1;
+  font-size: 11px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.2);
+  animation: flow-arrive 700ms both;
+}
+.flow-index { color: #5eead4; animation-delay: 180ms; }
+.flow-search { color: #93c5fd; animation-delay: 360ms; }
+.flow-track {
+  position: relative;
+  width: 80px;
+  height: 2px;
+  flex: 0 1 80px;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.25);
+}
+.flow-track i {
+  position: absolute;
+  top: -2px;
+  left: -8px;
+  width: 7px;
+  height: 6px;
+  border-radius: 50%;
+  background: #5eead4;
+  box-shadow: 0 0 12px #5eead4;
+  animation: flow-particle 2s linear infinite;
+}
+.flow-track i:nth-child(2) { animation-delay: 650ms; }
+.flow-track i:nth-child(3) { animation-delay: 1300ms; }
+.flow-track-second i { background: #93c5fd; box-shadow: 0 0 12px #93c5fd; }
+@keyframes flow-particle {
+  from { transform: translateX(0); opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  to { transform: translateX(90px); opacity: 0; }
+}
+@keyframes flow-arrive {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 540px) {
+  .retrieval-flow { gap: 6px; }
+  .flow-node { width: 82px; height: 88px; }
+  .flow-track { width: 24px; flex-basis: 24px; }
+  @keyframes flow-particle {
+    to { transform: translateX(32px); opacity: 0; }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flow-node, .flow-track i { animation: none; }
+}

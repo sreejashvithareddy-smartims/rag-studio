@@ -1,18 +1,17 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { FlaskConical, FileStack, Split, Layers, PanelLeftClose, PanelLeftOpen, History, FolderOpen } from 'lucide-react'
+import { FlaskConical, FileStack, Split, Layers, PanelLeftClose, PanelLeftOpen, History } from 'lucide-react'
 import { useProject } from '../context/ProjectContext.jsx'
-import HistoryPanel from './HistoryPanel.jsx'
 
 const links = [
-  { to: '/documents', label: '1. Knowledge Base', icon: FileStack, end: true },
+  { to: '/', label: '1. Knowledge Base', icon: FileStack, end: true },
   { to: '/query', label: '2. Run Query', icon: FlaskConical },
   { to: '/compare', label: '3. Compare Methods', icon: Split },
+  { to: '/project-history', label: '4. Project History', icon: History },
 ]
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
-  const [showHistory, setShowHistory] = useState(false)
   const { selectedProject } = useProject()
   const navigate = useNavigate()
 
@@ -38,15 +37,9 @@ export default function Sidebar() {
       {selectedProject && !collapsed && (
         <div className="px-4 py-3 border-b border-white/5">
           <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide mono-tag text-slate-500 mb-1">
-            <FolderOpen size={11} /> Project
+            <History size={11} /> Active project
           </div>
           <p className="text-sm font-semibold text-white truncate">{selectedProject.name}</p>
-          <button
-            onClick={() => setShowHistory(true)}
-            className="flex items-center gap-1.5 text-[11px] text-brand-400 hover:text-brand-300 mt-2"
-          >
-            <History size={12} /> View history
-          </button>
         </div>
       )}
 
@@ -78,9 +71,6 @@ export default function Sidebar() {
         </div>
       )}
 
-      {showHistory && selectedProject && (
-        <HistoryPanel projectId={selectedProject.project_id} onClose={() => setShowHistory(false)} />
-      )}
     </aside>
   )
 }

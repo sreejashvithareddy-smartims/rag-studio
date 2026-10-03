@@ -35,7 +35,7 @@ export default function QueryPage() {
     setError(null)
     setResult(null)
     try {
-      const res = await runQuery({ doc_id: selectedDoc.doc_id, technique, query, top_k: Number(topK) })
+      const res = await runQuery({ doc_id: selectedDoc.doc_id, technique, query, top_k: Number(topK), project_id: selectedProject?.project_id })
       setResult(res)
     } catch (e) {
       setError(e?.response?.data?.detail || 'Query failed.')

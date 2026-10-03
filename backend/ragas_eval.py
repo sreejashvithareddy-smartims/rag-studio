@@ -1,19 +1,7 @@
-"""
-RAGAS-based evaluation — standardized, published RAG metrics instead of
-hand-written judge prompts.
+"""RAGAS evaluation for ad-hoc comparisons, which have no reference answer."""
+import importlib
+import re
 
-- Faithfulness: are the answer's claims actually supported by the retrieved context?
-- Answer Relevancy: does the answer actually address the question asked?
-
-Embeddings always use the local sentence-transformers model (free, no key needed,
-consistent with the rest of the app). The judge LLM uses whichever provider is
-configured for generation (OpenAI or Gemini) via LangChain wrappers, since RAGAS
-requires LangChain-compatible LLM/embedding objects.
-"""
-from datasets import Dataset
-from ragas import evaluate as ragas_evaluate
-from ragas.metrics import faithfulness, answer_relevancy
-from langchain_huggingface import HuggingFaceEmbeddings
 from config import settings
 
 _llm_cache = None
@@ -48,37 +36,95 @@ def _get_ragas_llm():
 def _get_ragas_embeddings():
     global _embeddings_cache
     if _embeddings_cache is None:
+        from langchain_huggingface import HuggingFaceEmbeddings
         _embeddings_cache = HuggingFaceEmbeddings(model_name=settings.LOCAL_EMBEDDING_MODEL)
     return _embeddings_cache
 
 
+def _safe_float(value):
+    try:
+        f = float(value)
+        return f if f == f else None  # NaN check
+    except (TypeError, ValueError):
+        return None
+
+
+def _load_ragas_components():
+    """Load optional RAGAS dependencies only when Compare requests evaluation."""
+    from datasets import Dataset
+    from ragas import evaluate as ragas_evaluate
+    from ragas.metrics import answer_relevancy, faithfulness
+
+    metrics_module = importlib.import_module("ragas.metrics")
+    precision_type = getattr(metrics_module, "LLMContextPrecisionWithoutReference", None)
+    if precision_type is not None:
+        precision_metric = precision_type()
+    else:
+        precision_metric = getattr(metrics_module, "context_precision_without_reference", None)
+        if precision_metric is None:
+            raise RuntimeError(
+                "Installed RAGAS does not provide Context Precision without reference data. "
+                "Install the project's pinned ragas==0.2.10 dependency."
+            )
+
+    precision_name = getattr(precision_metric, "name", "")
+    if not precision_name:
+        precision_name = "llm_context_precision_without_reference"
+    return Dataset, ragas_evaluate, [faithfulness, answer_relevancy, precision_metric], precision_name
+
+
+def _redact_secrets(message: str) -> str:
+    for secret in (
+        settings.OPENAI_API_KEY,
+        settings.GEMINI_API_KEY,
+        settings.GROQ_API_KEY,
+        settings.ANTHROPIC_API_KEY,
+    ):
+        if secret:
+            message = message.replace(secret, "[REDACTED]")
+    message = re.sub(
+        r"(?i)(api[_-]?key|token|password|secret)(\s*[:=]\s*)[^\s&,]+",
+        r"\1\2[REDACTED]",
+        message,
+    )
+    return message
+
+
 def ragas_score(query: str, answer: str, contexts: list[str]) -> dict:
     """
-    Runs RAGAS faithfulness + answer_relevancy for a single query/answer/context set.
-    Returns {"faithfulness": float 0-1, "answer_relevancy": float 0-1}.
-    Raises on failure — caller should catch and fall back if needed.
+    Runs the full RAGAS metric suite for a single query/answer/context set.
+    Returns faithfulness, answer_relevancy, and reference-free context_precision.
+    Each call builds a fresh one-row dataset for the supplied system only.
     """
+    Dataset, ragas_evaluate, metrics, precision_name = _load_ragas_components()
     llm = _get_ragas_llm()
     embeddings = _get_ragas_embeddings()
 
+    if not contexts:
+        raise ValueError("RAGAS requires at least one retrieved context.")
+
     dataset = Dataset.from_dict({
-        "question": [query],
-        "answer": [answer],
-        "contexts": [contexts if contexts else [""]],
+        "user_input": [query],
+        "response": [answer],
+        "retrieved_contexts": [contexts],
     })
 
     result = ragas_evaluate(
         dataset,
-        metrics=[faithfulness, answer_relevancy],
+        metrics=metrics,
         llm=llm,
         embeddings=embeddings,
+        raise_exceptions=True,
+        show_progress=False,
     )
     df = result.to_pandas()
 
-    faith = df["faithfulness"][0] if "faithfulness" in df.columns else None
-    rel = df["answer_relevancy"][0] if "answer_relevancy" in df.columns else None
-
-    return {
-        "faithfulness": float(faith) if faith is not None and faith == faith else None,
-        "answer_relevancy": float(rel) if rel is not None and rel == rel else None,
+    scores = {
+        "faithfulness": _safe_float(df["faithfulness"][0]) if "faithfulness" in df.columns else None,
+        "answer_relevancy": _safe_float(df["answer_relevancy"][0]) if "answer_relevancy" in df.columns else None,
+        "context_precision": _safe_float(df[precision_name][0]) if precision_name in df.columns else None,
     }
+    missing = [name for name, value in scores.items() if value is None]
+    if missing:
+        raise RuntimeError(f"RAGAS returned no score for required metric(s): {', '.join(missing)}")
+    return scores

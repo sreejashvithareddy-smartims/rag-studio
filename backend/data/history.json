@@ -131,5 +131,29 @@
       "different_count": 10,
       "timestamp": 1789708923.7357786
     }
+  ],
+  "d9445d56": [
+    {
+      "type": "compare",
+      "technique_a": "Simple RAG",
+      "technique_b": "Semantic Chunking",
+      "query": "What are all the steps required",
+      "doc_id": "9758d6a8",
+      "winner": "Semantic Chunking",
+      "similar_count": 0,
+      "different_count": 10,
+      "timestamp": 1791011710.3347373
+    },
+    {
+      "type": "compare",
+      "technique_a": "Simple RAG",
+      "technique_b": "Semantic Chunking",
+      "query": "What are all the steps used \n",
+      "doc_id": "9758d6a8",
+      "winner": "Semantic Chunking",
+      "similar_count": 0,
+      "different_count": 10,
+      "timestamp": 1791009008.9821458
+    }
   ]
 }

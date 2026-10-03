@@ -41,6 +41,9 @@ async def run_query(req: QueryRequest):
             "technique": result.get("label"),
             "query": req.query,
             "doc_id": req.doc_id,
+            "answer": result.get("answer"),
+            "chunks": result.get("chunks", []),
+            "timing": result.get("timing", {}),
             "answer_preview": (result.get("answer") or "")[:150],
         })
 

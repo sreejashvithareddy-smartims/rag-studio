@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, FolderOpen, Trash2, ArrowRight, X } from 'lucide-react'
+import { Plus, FolderOpen, Trash2, ArrowRight, X, BookOpen } from 'lucide-react'
 import { getProjects, createProject, deleteProject } from '../api.js'
 import { useProject } from '../context/ProjectContext.jsx'
+import { useDocument } from '../context/DocumentContext.jsx'
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState([])
   const [creating, setCreating] = useState(false)
   const [newName, setNewName] = useState('')
   const navigate = useNavigate()
-  const { setSelectedProject } = useProject()
+  const { selectedProject, setSelectedProject, hasStartedProject } = useProject()
+  const { setSelectedDoc } = useDocument()
 
   const refresh = () => getProjects().then(setProjects).catch(() => {})
   useEffect(() => { refresh() }, [])
@@ -24,14 +26,16 @@ export default function ProjectsPage() {
     if (!newName.trim()) return
     const project = await createProject(newName.trim())
     setSelectedProject(project)
+    setSelectedDoc(null)
     setCreating(false)
     setNewName('')
-    navigate('/documents')
+    navigate('/start')
   }
 
   const handleOpen = (project) => {
+    if (selectedProject?.project_id !== project.project_id) setSelectedDoc(null)
     setSelectedProject(project)
-    navigate('/documents')
+    navigate('/start')
   }
 
   const handleDelete = async (e, projectId) => {
@@ -42,10 +46,19 @@ export default function ProjectsPage() {
 
   return (
     <div className="max-w-4xl mx-auto py-14 px-8">
-      <header className="mb-10 text-center">
-        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">RAG Studio</h1>
-        <p className="text-slate-500 mt-2">Create a new project or continue one you've already started.</p>
+      <header className="mb-8 text-center">
+        <span className="inline-block text-[11px] font-bold uppercase tracking-wide mono-tag text-brand-600 bg-brand-50 px-2.5 py-1 rounded-full mb-3">Knowledge Base</span>
+        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Your RAG projects</h1>
+        <p className="text-slate-500 mt-2">Create a project or open an existing workspace.</p>
       </header>
+
+      {selectedProject && hasStartedProject && (
+        <div className="mb-6 flex justify-center">
+          <button onClick={() => navigate('/documents')} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-card transition hover:border-brand-300 hover:text-brand-700">
+            <BookOpen size={16} /> Manage documents for {selectedProject.name}
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Create new project card */}
@@ -87,16 +100,12 @@ export default function ProjectsPage() {
 
         {/* Existing projects */}
         {projects.map((p) => (
-          <button
-            key={p.project_id}
-            onClick={() => handleOpen(p)}
-            className="group flex items-center justify-between border border-slate-200 hover:border-brand-300 bg-white rounded-2xl p-6 shadow-card transition text-left"
-          >
-            <div className="flex items-center gap-3 min-w-0">
+          <div key={p.project_id} className="group flex items-center justify-between border border-slate-200 hover:border-brand-300 bg-white rounded-2xl p-4 shadow-card transition">
+            <button onClick={() => handleOpen(p)} className="flex items-center gap-3 min-w-0 flex-1 text-left">
               <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
                 <FolderOpen size={19} className="text-slate-500" />
               </div>
-                            <div className="min-w-0">
+              <div className="min-w-0">
                 <p className="text-sm font-semibold text-slate-800 truncate flex items-center gap-2">
                   {p.name}
                   {p.overall_status === 'ready' && <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" title="Ready" />}
@@ -108,14 +117,16 @@ export default function ProjectsPage() {
                   {p.doc_count > 0 && ` · ${p.doc_count} doc${p.doc_count !== 1 ? 's' : ''}`}
                 </p>
               </div>
-            </div>
+            </button>
             <button
               onClick={(e) => handleDelete(e, p.project_id)}
               className="p-2 rounded-lg text-slate-300 hover:text-red-600 hover:bg-red-50 transition opacity-0 group-hover:opacity-100 shrink-0"
+              title="Delete project"
+              aria-label={`Delete ${p.name}`}
             >
               <Trash2 size={15} />
             </button>
-          </button>
+          </div>
         ))}
       </div>
 
